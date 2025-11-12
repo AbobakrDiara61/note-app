@@ -12,6 +12,7 @@ const noteSchema = mongoose.Schema({
 }, {timestamps: true} // created at and updated at
 );
 // model bassed on the schema
+/** @type {import('mongoose').Model} */
 const Note = mongoose.model('Note', noteSchema);
 
 export default Note
