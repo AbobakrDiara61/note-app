@@ -23,6 +23,8 @@ router.route('/:id')
     .delete(deleteNote);
 
 router.param('id', async(req, res, next, id) => {
+    // This is a middleware function
+    // One Of Middleware Use Cases is a check if the note exits in the database or not
     req.id = id;
     const note = await Note.findById(id);
     if(!note) {
