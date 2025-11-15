@@ -1,2 +1,52 @@
 @import "tailwindcss";
-@plugin "daisyui";
+/* @plugin "daisyui" {
+   themes: light --default, dark --prefersdark, forest;
+} */
+
+@theme {
+    --color-primary: #1fb854;
+    --color-primary-hover: #1ba74c;
+    --color-secondary: #1eb88e;
+    --color-accent: #1fb8ab;
+
+    --color-base: #1b1717;
+    --color-base-200: #161212;
+    --color-base-300: #110d0d;
+
+    --color-success: #00a96e;
+    --color-warning: #ffbe00;
+    --color-error: #ff5861;
+    --color-info: #00b5ff;
+}
+@layer base {
+    button {
+        @apply cursor-pointer outline-0 focus:outline-0;
+    }
+    :is(input, textarea) {
+        @apply outline-0 focus:outline-0;
+    }
+}
+
+@layer components {
+    .main-container {
+        @apply w-full md:w-10/12 lg:w-9/12 mx-auto;
+    }
+    .main-section {
+        @apply py-20 px-8;
+    }
+    .btn-transition {
+        @apply duration-300 transition-colors;
+    }
+    .main-btn {
+        @apply text-sm font-medium text-black bg-primary hover:bg-primary-hover outline-0 focus:outline-0 py-1.5 md:py-2 px-4 rounded-full transition-all duration-300 transform hover:-translate-y-0.5;
+    }
+    .ghost-btn {
+        @apply text-white hover:text-stone-200 hover:bg-white/20 transition-all duration-300 w-fit py-1.5 px-3 rounded-full;
+    }
+    .input-wrapper {
+        @apply flex flex-col gap-2 mb-3 text-sm;
+    }
+    .input-wrapper :is(input, textarea) {
+        @apply ring-1 ring-stone-300/10 rounded-2xl py-2 px-6 placeholder:text-sm focus:ring-3 transition-all duration-300 focus:ring-accent/30; 
+    }
+}
