@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
 import toast from 'react-hot-toast';
 
-const NoteForm = ({onSubmit, sumbitText, loadingText}) => {
+const NoteForm = ({onSubmit, sumbitText, loadingText, note}) => {
 
   const titleRef = useRef(null);
   const descriptionRef = useRef(null);
-  const [ title, setTitle ] = useState('');
-  const [ description, setDescription ] = useState('');
+  const [ title, setTitle ] = useState(note ? note.title : '');
+  const [ description, setDescription ] = useState(note ? note.description : '');
   const [ loading, setLoading ] = useState(false);
 
   const handleSubmit = (e) => {

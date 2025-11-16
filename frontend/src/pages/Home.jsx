@@ -42,7 +42,7 @@ const Home = () => {
       { isLoading && <Loading />}
       <Header />
       { isRateLimitExceeded && <RateLimitUi />}
-      {notes.length === 0 && !isRateLimitExceeded && <NoNotesUi />}
+      {notes.length === 0 && !isRateLimitExceeded && !isLoading && <NoNotesUi />}
       <div className='main-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
         {notes.map(note => <Note noteObject={note} setNotes={setNotes} key={note._id}/>)}
       </div>

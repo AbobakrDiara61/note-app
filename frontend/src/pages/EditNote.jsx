@@ -20,8 +20,8 @@ const EditNote = () => {
         body: JSON.stringify({title, description}),
       });
       response.status === 200 && toast.success("Note Updated Successfully");
+      // console.log(response);
       navigate('/');
-      console.log(response);
 
     } catch (error) {
       console.log(error);
@@ -49,12 +49,12 @@ const EditNote = () => {
     }
   }
   return (
-    <section className='min-h-screen flex px-5 @min-xs:px-20'>
-      <div className='w-full md:w-10/12 md:max-w-lg m-auto flex flex-col justify-center '>
+    <section className='min-h-screen bg-base flex px-5 @min-xs:px-20'>
+      <div className='w-full md:max-w-2xl m-auto flex flex-col justify-center '>
         <div className='mb-5 flex justify-between'>
-          <Link to={'/'} className='text-white' >
+          <Link to={'/'} className='ghost-btn group' >
             <FontAwesomeIcon icon={faArrowLeft} />
-            <span className='font-medium ml-2 relative duration-300 transition-all left-0 hover:-left-1'>Back to Notes</span>
+            <span className='font-medium ml-2 relative duration-300 transition-all left-0 group-hover:-left-1'>Back to Notes</span>
           </Link>
           <button className='py-2 px-4 rounded-full text-error hover:text-red-300 font-bold ring-1 ring-error/70 hover:ring-error/80 hover:bg-error/10 transition-all duration-300 ' 
             onClick={handleDeletion}
@@ -63,7 +63,7 @@ const EditNote = () => {
             <span className='ml-2'>Delete Note</span>
           </button>
         </div>
-        <NoteForm sumbitText={"Save Changes"} loadingText={"Saving ..."} onSubmit={editNote}/>
+        <NoteForm sumbitText={"Save Changes"} loadingText={"Saving ..."} note={location.state} onSubmit={editNote}/>
       </div>
     </section>
   )

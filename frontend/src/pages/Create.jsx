@@ -28,9 +28,9 @@ const Create = () => {
   return (
     <section className='min-h-screen bg-base-200 flex px-5 @min-xs:px-20'>
       <div className='w-full md:w-10/12 md:max-w-lg m-auto flex flex-col justify-center '>
-        <Link to={'/'} className='mb-5 ghost-btn ' >
+        <Link to={'/'} className='mb-5 ghost-btn group' >
           <FontAwesomeIcon icon={faArrowLeft} />
-          <span className='font-medium ml-2 relative duration-300 transition-all left-0 hover:-left-1'>Back to Notes</span>
+          <span className='font-medium ml-2 relative duration-300 transition-all left-0 group-hover:-left-1'>Back to Notes</span>
         </Link>
         <NoteForm sumbitText={"Create Note"} loadingText={"Creating ..."} onSubmit={onSubmit}/>
       </div>
