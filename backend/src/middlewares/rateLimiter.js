@@ -1,10 +1,10 @@
 import rateLimit from "../config/upstash.js";
 
 const rateLimiter = async (req, res, next) => {
-    // we should put users account but we don't have auth but we can use ip
-    const {success} = await rateLimit.limit(req.ip);
-    // const {success} = await rateLimit.limit("ratelimit");
     try {
+        // we should put users account but we don't have auth but we can use ip
+        const {success} = await rateLimit.limit(req.ip);
+        // const {success} = await rateLimit.limit("ratelimit");
         if(!success) 
             return res.status(429).json({error: "Rate Limit Exceeded"});
         next();

@@ -13,6 +13,8 @@ export const getNotes = async (req, res) => {
 export const getNoteById = async (req, res) => {
     try {
         const note = await Note.findById(req.id);
+        if(!note) 
+            return res.status(404).json({error: "Note Not Found"});
         res.json(note);
     } catch (error) {
         console.error("Error in getNoteById Controller", error);
@@ -25,14 +27,10 @@ export const createNote = async (req, res) => {
         const {title, description} = req.body;
         /** @type {import('mongoose').Document} */
         const note = new Note({title, description}); 
-        const notes = await Note.find();
-        if(notes.find(n => n.title === note.title)) {
+        const exists = await Note.findOne({title});
+        if(exists) 
             return res.status(400).json({error: "Note Already Exists"});
-        }
-        const savedNote = await note.save({new: true});
-        if(!savedNote) 
-            return res.status(500).json({error: "Error With Creating The Note in Database"});
-
+        const savedNote = await note.save();
         res.status(201).json(savedNote);
     } catch (error) {
         console.error("Error in CreatNote Controller", error);
@@ -46,6 +44,9 @@ export const updateNote = async (req, res) => {
         const note = await Note.findByIdAndUpdate(req.id, {title, description}, {
             new: true
         });
+        if(!note) 
+            return res.status(400).json({error: "Error With Updating The Note in Database"});
+
         res.status(200).json(note);
         
     } catch (error) {
@@ -56,6 +57,12 @@ export const updateNote = async (req, res) => {
 
 export const deleteNote = async (req, res) => {
     /** @type {import('mongoose').Document} */
-    const deletedNote = await Note.findByIdAndDelete(req.id);
-    res.json({message: "Note Deleted Successfully", ...deletedNote});
+    try {
+        const deletedNote = await Note.findByIdAndDelete(req.id);
+        if (!deletedNote) return res.status(404).json({ message: "Note not found" });
+        res.json({message: "Note Deleted Successfully", deletedNote});
+    } catch (error) {
+        console.error("Error in deleteNote Controller", error);
+        res.status(500).json({error: "Error With Deleting The Note in Database"});
+    }
 }
