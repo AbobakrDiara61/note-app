@@ -21,7 +21,9 @@ if(process.env.NODE_ENV === "development") {
     ));
 }
 app.use(json());
-app.use(rateLimiter);
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    app.use(rateLimiter);
+}
 // const noteRouter = require("./routes/notesRouter");
 
 app.use('/api/notes', noteRouter);
@@ -31,8 +33,8 @@ if(process.env.NODE_ENV == "production") {
     app.use(express.static(path.join(__dirname, "../frontend/dist"))); 
 
     // if we get any route other than our api/notes
-    app.get("/*", (req, res) => {
-        res.sendFile(path.join(__dirname, "../frontend/", "dist","/index.html"));
+    app.get(/.*/, (req, res) => {
+        res.sendFile(path.join(__dirname, "../frontend/", "dist","index.html"));
     });
 }
 
