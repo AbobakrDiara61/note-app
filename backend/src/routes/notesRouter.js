@@ -1,6 +1,7 @@
 import express from 'express'
 import Note from '../models/Note.js';
 import { createNote, deleteNote, getNoteById, getNotes, updateNote } from '../controllers/notesController.js';
+import authentication from '../middlewares/authentication.js';
 const router = express.Router();
 /** 
  * @typedef {Object} Note
@@ -11,16 +12,16 @@ const router = express.Router();
  */
 
 router.route('/')
-    .get(getNotes)
-    .post(createNote);
+    .get(authentication, getNotes)
+    .post(authentication, createNote);
 
 router.route('/:id')
-    .get(getNoteById)
-    .put(updateNote)
+    .get(authentication, getNoteById)
+    .put(authentication, updateNote)
     .patch((req, res) => {
         res.send("You Updated The Note with The Associated ID");
     })
-    .delete(deleteNote);
+    .delete(authentication, deleteNote);
 
 router.param('id', async(req, res, next, id) => {
     // This is a middleware function
@@ -34,5 +35,4 @@ router.param('id', async(req, res, next, id) => {
     next();
 })
 
-// module.exports = router
 export default router

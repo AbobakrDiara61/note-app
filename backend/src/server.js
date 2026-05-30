@@ -1,9 +1,12 @@
 import express, { json } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import cookieParser from 'cookie-parser'
 import path from 'path'
 import connectDB from './config/db.js';
 import noteRouter from "./routes/notesRouter.js"
+import authRouter from "./routes/authRouter.js"
+import usersRouter from './routes/usersRouter.js'
 import rateLimiter from './middlewares/rateLimiter.js';
 
 const app = express();
@@ -17,16 +20,20 @@ if(process.env.NODE_ENV === "development") {
     app.use(
         cors({
             origin: ["http://localhost:5173"],
+            credentials: true,
         }
     ));
 }
 app.use(json());
+app.use(cookieParser());
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    app.use(rateLimiter);
+    // app.use(rateLimiter);
 }
 // const noteRouter = require("./routes/notesRouter");
 
 app.use('/api/notes', noteRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 
 if(process.env.NODE_ENV == "production") {
     //serve our op react app as static asset
