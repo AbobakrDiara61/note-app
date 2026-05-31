@@ -7,6 +7,7 @@ import EditNote from "./pages/EditNote"
 import Loading from "./components/Loading";
 import RedirectHome from "./router/RedirectHome";
 import ProtectedRoute from "./router/ProtectedRoute";
+import Role from "./router/Role";
 
 import FormProvider from "./contexts/FormProvider";
 import AuthContext from "./contexts/AuthContext"
@@ -19,6 +20,7 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import EmailVerification from "./pages/auth/EmailVerification";
 
+import AdminDashboard from "./pages/admin/AdminDashboard"
 
 function App() {
   const { checkAuth } = useAuth();
@@ -37,6 +39,9 @@ function App() {
           <Route path='/' element={<Home />} />
           <Route path='/create' element={<Create />} />
           <Route path='/edit' element={<EditNote />} />
+          <Route element={<Role roles={["admin"]} />}>
+            <Route path="/dashboard" element={<AdminDashboard />} />
+          </Route>
         </Route>
 
         <Route element={<FormProvider><RedirectHome /></FormProvider>} >
