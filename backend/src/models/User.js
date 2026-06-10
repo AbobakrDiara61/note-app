@@ -2,18 +2,37 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
 import validator from 'validator'
 
+const preferencesSchema = new mongoose.Schema(
+    {
+        theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+        language: { type: String, default: 'en' },
+        defaultView: { type: String, enum: ['grid', 'list'], default: 'grid' },
+        defaultContentType: {
+            type: String,
+            enum: ['text', 'markdown', 'jsx'],
+            default: 'text',
+        },
+        notificationsEnabled: { type: Boolean, default: true },
+    },
+    { _id: false }
+)
+
 const userSchema = mongoose.Schema({
     name: {
         type: String,
+        trim: true,
         required: true
     },
     email: {
         type: String,
+        trim: true,
         required: true,
+        lowercase: true,
         unique: true
     },
     password: {
         type: String,
+        trim: true,
         required: true
     },
     refreshToken: {
@@ -41,43 +60,67 @@ const userSchema = mongoose.Schema({
         type: Date,
         default: null
     },
+    lastLogin: {
+        type: Date,
+        default: null
+    },
+    preferences: preferencesSchema,
     role: {
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
+    },
+    bio: {
+        type: String,
+        maxLength: 100,
+    },
+    gender: {
+        type: String,
+        enum: ['male', 'female'],
+        default: 'male'
+    },
+    socialAccounts: {
+        linkedIn: { type: String, trim: true, default: null },
+        twitter: { type: String, trim: true, default: null },
+        github: { type: String, trim: true, default: null },
+        portfolio: { type: String, trim: true, default: null }
+    },
+    avatar: {
+        type: String,
+        default: 'https://res.cloudinary.com/dzmnrmrvs/image/upload/v1770556156/370751043_e67eb556-f125-4e24-95ad-8aff21b9926a_ism2rl.svg'
     }
-}, {timestamps: true})
+}, { timestamps: true })
 
 userSchema.statics.signUp = async function (user) {
     const { email, password } = user;
     validate(user);
     const isEmailExits = await this.findOne({ email });
-    if(isEmailExits) 
+    if (isEmailExits)
         throw Object.assign(new Error("Email Already Exists"), { status: 400 });
     const hashdPassword = await bcrypt.hash(password, 10);
 
     const newUser = await this.create({ ...user, password: hashdPassword });
-    return newUser; 
+    return newUser;
 }
 
 userSchema.statics.login = async function (user) {
     const { email, password } = user;
     const userModel = await this.findOne({ email });
-    switch(true) {
+    switch (true) {
         case !email || !password:
             throw Object.assign(new Error("All Fields Must be Filled"), { status: 400 });
         case !userModel:
             throw Object.assign(new Error("User Not Found"), { status: 404 });
     }
     const isMatched = await bcrypt.compare(password, userModel.password);
-    if(!isMatched)
+    if (!isMatched)
         throw Object.assign(new Error("Invalid Password"), { status: 401 });
     return userModel;
 }
 
-function validate (user) {
-    const {name, email, password} = user;
-    switch(true) {
+function validate(user) {
+    const { name, email, password } = user;
+    switch (true) {
         case !name || !email || !password:
             throw Object.assign(new Error("All Fields Must be Filled"), { status: 400 });
         case !validator.isEmail(email):
