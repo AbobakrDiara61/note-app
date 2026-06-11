@@ -19,16 +19,15 @@ router.get('/', authentication, getAllFolders);
 // router.get('/id/slug', authentication, findFolder, getAllFolders);
 router.post('/', authentication, createFolder);
 
-router.put('/:_id', authentication, findFolder, updateFolder);
+router.put('/:identifier', authentication, findFolder, updateFolder);
 
 // copying or moving folder later to add
-router.patch('/soft-delete/:_id', authentication, findFolder, softDeleteFolder);
-router.patch('/restore/:_id', authentication, findFolder, restoreFolder);
-router.patch('/archive/:_id', authentication, findFolder, archiveFolder);
-router.patch('/pin/:_id', authentication, findFolder, pinFolder);
-router.patch('/unpin/:_id', authentication, findFolder, unPinFolder);
+router.patch('/soft-delete/:identifier', authentication, findFolder, softDeleteFolder);
+router.patch('/restore/:identifier', authentication, findFolder, restoreFolder);
+router.patch('/archive/:identifier', authentication, findFolder, archiveFolder);
+router.patch('/pin/:identifier', authentication, findFolder, pinFolder);
+router.patch('/unpin/:identifier', authentication, findFolder, unPinFolder);
 
-router.delete('/id/:_id', authentication, findFolder, hardDeleteFolder);
-router.delete('/slug/:slug', authentication, findFolder, hardDeleteFolder);
+router.delete('/:identifier', authentication, findFolder, hardDeleteFolder);
 
 export default router;

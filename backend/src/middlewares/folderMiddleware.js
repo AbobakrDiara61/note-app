@@ -1,21 +1,16 @@
+import mongoose from "mongoose";
 import Folder from "../models/Folder.js";
 
 const findFolder = async (req, res, next) => {
-    const { _id, slug } = req.params;
-    // console.log({ params: req.params })
-    if (!_id && !slug) {
+    const { identifier } = req.params;
+    if (!identifier) {
         return res.status(400).json({ message: "Folder id or slug is required" });
     }
-
+    const isObjectId = mongoose.Types.ObjectId.isValid(identifier);
+    
     try {
-        let filter = {};
-        if (_id) filter._id = _id;
-        if (slug) {
-            filter.owner = req.user._id;
-            filter.slug = slug;
-        }
-        const folder = await Folder.findOne(filter);
-        // console.log({ folder });
+        console.log({ params: req.params, isObjectId })
+        const folder = isObjectId ? await Folder.findById(identifier) : await Folder.findOne({ slug: identifier, owner: req.user._id });
         if(!folder)
             return res.status(404).json({ message: "Folder not found." });
         req.folder = folder;
