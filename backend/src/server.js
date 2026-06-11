@@ -7,6 +7,7 @@ import connectDB from './config/db.js';
 import noteRouter from "./routes/notesRouter.js"
 import authRouter from "./routes/authRouter.js"
 import usersRouter from './routes/usersRouter.js'
+import folderRouter from './routes/folderRouter.js'
 import rateLimiter from './middlewares/rateLimiter.js';
 
 const app = express();
@@ -34,6 +35,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 app.use('/api/notes', noteRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/folder', folderRouter);
 
 if(process.env.NODE_ENV == "production") {
     //serve our op react app as static asset
