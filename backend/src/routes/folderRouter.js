@@ -11,13 +11,13 @@ import {
     unPinFolder
 } from '../controllers/folderController.js';
 import authentication from '../middlewares/authentication.js';
-import { findFolder } from '../middlewares/folderMiddleware.js';
+import { findFolder, validateFolder } from '../middlewares/folderMiddleware.js';
 const router = express.Router();
 
 router.get('/', authentication, getAllFolders);
 // router.get('/id/_id', authentication, findFolder, getAllFolders);
 // router.get('/id/slug', authentication, findFolder, getAllFolders);
-router.post('/', authentication, createFolder);
+router.post('/', authentication, validateFolder, createFolder);
 
 router.put('/:identifier', authentication, findFolder, updateFolder);
 

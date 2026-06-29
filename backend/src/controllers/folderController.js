@@ -1,34 +1,75 @@
 import Folder from "../models/Folder.js";
 import Note from "../models/Note.js";
 
+const makeFolderUpdater = (overrides, message) => async (req, res) => {
+    try {
+        const folder = req.folder;
+        Object.assign(folder, typeof overrides === "function" ? overrides(folder, req) : overrides);
+        await folder.save();
+        return res.status(200).json({ message, folder });
+    } catch (error) {
+        console.error(`Error: ${message} in makeFolderUpdater`, error);
+        return res.status(500).json({ message: "Internal server error in updating the folder" });
+    }
+};
+
+const cascadeUpdate = async (folderId, folderOverrides, noteOverrides) => {
+    const folder = await Folder.findById(folderId);
+    if (!folder) 
+        return res.status(400).json({ message: "Can't update folder" });
+
+    const resolvedFolderOverrides = typeof folderOverrides === "function"
+        ? folderOverrides()
+        : folderOverrides;
+
+    const resolvedNoteOverrides = typeof noteOverrides === "function"
+        ? noteOverrides()
+        : (noteOverrides ?? resolvedFolderOverrides);
+
+    Object.assign(folder, resolvedFolderOverrides);
+    await folder.save();
+
+    await Note.updateMany(
+        { folder: folderId },
+        { $set: resolvedNoteOverrides }
+    );
+
+    const subFolders = await Folder.find({ parentFolder: folderId });
+    await Promise.all(subFolders.map(sub => cascadeUpdate(sub._id, folderOverrides, noteOverrides)));
+};
+
+
+const makeCascadeUpdater = (folderOverrides, noteOverrides, message) => async (req, res) => {
+    try {
+        await cascadeUpdate(req.folder._id, folderOverrides, noteOverrides);
+        return res.status(200).json({ message, folder: req.folder });
+    } catch (error) {
+        console.error(`Error in cascadeUpdater [${message}]:`, error);
+        return res.status(500).json({ message: "Internal server error in updating the folder" });
+    }
+};
+
 const createFolder = async (req, res) => {
     try {
         const { _id } = req.user;
-        const { name, slug, parentFolder, rootFolder, preferences } = req.body;
-
-        if (!name)
-            slug = `Untitled-Folder-${Date.now()}`;
-
-        /*         let path = [];
-                if (rootFolder) {
-                    path.push(rootFolder);
-                } else {
+        const { parentFolder } = req.body;
+        const { name, slug, preferences } = req.body;
         
-        } */
+        const path = parentFolder
+            ? [...(parentFolder.path || []), parentFolder._id]
+            : [];
+
         const folder = await Folder.create({
             name,
             slug,
-            parentFolder,
-            rootFolder,
+            parentFolder: parentFolder?._id,
+            path,
             preferences,
             owner: _id,
 
         });
 
-        return res.status(201).json({
-            message: "Folder created successfully.",
-            folder,
-        })
+        return res.status(201).json({ message: "Folder created successfully.", folder });
     } catch (error) {
         console.error("Error in createFolder controller", error);
         return res.status(500).json({ message: "Failed to create folder" });
@@ -37,28 +78,15 @@ const createFolder = async (req, res) => {
 
 const getAllFolders = async (req, res) => {
     try {
-        const folders = await Folder.find();
+        const { _id } = req.user;
+        const folders = await Folder.find({ owner: _id });
         if (!folders)
             return res.status(404).json({ message: "No folders found." })
 
-        return res.status(200).json({
-            message: "Folders fetched successfully.",
-            folders,
-        })
+        return res.status(200).json({ message: "Folders fetched successfully.", folders })
     } catch (error) {
         console.error("Error in getAllFolders controller", error);
         return res.status(500).json({ message: "Failed to get folders" });
-    }
-}
-
-const getFilteredFolders = async (req, res) => {
-    try {
-        
-    } catch (error) {
-        console.log("Error in getFilteredFolders controller");
-        return res.status(500).json({
-            message: "Failed to get folders"
-        });
     }
 }
 
@@ -73,10 +101,7 @@ const updateFolder = async (req, res) => {
 
         await folder.save();
         
-        return res.status(200).json({
-            message: "Folder updated successfully.",
-            folder,
-        })
+        return res.status(200).json({ message: "Folder updated successfully.", folder });
     } catch (error) {
         console.error("Error in updateFolder controller", error);
         return res.status(500).json({ message: "Failed to update folder" });
@@ -105,96 +130,25 @@ const hardDeleteFolder = async (req, res) => {
     }
 }
 
-const softDeleteFolder = async (req, res) => {
-    try {
-        const folder = req.folder;
+const softDeleteFolder = makeCascadeUpdater(
+    () => ({ status: "trash", deletedAt: new Date() }),
+    null,
+    "Folder deleted successfully."
+);
 
-        folder.deletedAt = new Date();
-        folder.status = 'trash';
-        await folder.save();
+const archiveFolder = makeCascadeUpdater(
+    { status: "archived" },
+    null,
+    "Folder archived successfully."
+);
 
-        // const children = await Folder.updateMany({ parentFolder: folder._id }, { status: 'trash', deletedAt: new Date() });
-        // const notes = await Note.updateMany({ folder: folder._id }, { status: 'trash', deletedAt: new Date() });
+const restoreFolder = makeCascadeUpdater(
+    { status: "active", deletedAt: null },
+    null,
+    "Folder restored successfully."
+);
 
-        return res.status(200).json({
-            message: "Folder deleted successfully.",
-            folder,
-            // children,
-            // notes
-        })
-    } catch (error) {
-        console.error("Error in softDeleteFolder controller", error);
-        return res.status(500).json({ message: "Failed to soft delete folder" });
-    }
-}
-
-const restoreFolder = async (req, res) => {
-    try {
-        const folder = req.folder;
-
-        folder.status = 'active';
-        folder.deletedAt = null;
-        await folder.save();
-
-        return res.status(200).json({
-            message: "Folder restored successfully.",
-            folder,
-        })
-    } catch (error) {
-        console.error("Error in restoreFolder controller", error);
-        return res.status(500).json({ message: "Failed to restore folder" });
-    }
-}
-
-const archiveFolder = async (req, res) => {
-    try {
-        const folder = req.folder;
-
-        folder.status = 'archived';
-        await folder.save();
-        // archive childern, notes - restore too
-        return res.status(200).json({
-            message: "Folder archived successfully.",
-            folder,
-        })
-    } catch (error) {
-        console.error("Error in archiveFolder controller", error);
-        return res.status(500).json({ message: "Failed to archive folder" });
-    }
-}
-
-const pinFolder = async (req, res) => {
-    try {
-        const folder = req.folder;
-
-        folder.preferences.pinned = true;
-        await folder.save();
-
-        return res.status(200).json({
-            message: "Folder pinned successfully.",
-            folder,
-        })
-    } catch (error) {
-        console.error("Error in pinFolder controller", error);
-        return res.status(500).json({ message: "Failed to pin folder" });
-    }
-}
-
-const unPinFolder = async (req, res) => {
-    try {
-        const folder = req.folder;
-
-        folder.preferences.pinned = false;
-        await folder.save();
-
-        return res.status(200).json({
-            message: "Folder unpinned successfully.",
-            folder,
-        })
-    } catch (error) {
-        console.error("Error in unPinFolder controller", error);
-        return res.status(500).json({ message: "Failed to unpin folder" });
-    }
-}
+const pinFolder        = makeFolderUpdater(       { pinned: true                              },  "Folder pinned successfully."   );
+const unPinFolder      = makeFolderUpdater(       { pinned: false                             },  "Folder unpinned successfully." );
 
 export { createFolder, getAllFolders, updateFolder, softDeleteFolder, hardDeleteFolder, archiveFolder, restoreFolder, pinFolder, unPinFolder };

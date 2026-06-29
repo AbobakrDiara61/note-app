@@ -13,6 +13,7 @@ const folderSchema = mongoose.Schema({
         required: true,
         trim: true,
         lowercase: true,
+        default: () => `untitled-folder-${Date.now()}`
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -39,14 +40,14 @@ const folderSchema = mongoose.Schema({
             type: String,
             default: '#D1D5DB'
         },
-        pinned: {
-            type: Boolean,
-            default: false
-        },
         icon: {
             type: String,
             default: 'Folder'
         },
+    },
+    pinned: {
+        type: Boolean,
+        default: false
     },
     noteCount: {
         type: Number,
