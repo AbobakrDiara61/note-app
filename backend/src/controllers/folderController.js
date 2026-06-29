@@ -109,26 +109,22 @@ const updateFolder = async (req, res) => {
 }
 
 const hardDeleteFolder = async (req, res) => {
+
+    const hardDeleteCascade = async (folderId) => {
+        await Note.deleteMany({ folder: folderId });
+        const subFolders = await Folder.find({ parentFolder: folderId });
+        await Promise.all(subFolders.map(sub => hardDeleteCascade(sub._id)));
+        await Folder.findByIdAndDelete(folderId);
+    }
+    
     try {
-        const folder = req.folder;
-        const result = await folder.deleteOne();
-
-        // notes should be deleted if parent folder is hard deleted
-
-        console.log({ result });
-
-        if(!result.acknowledged)
-            throw new Error("Database couldn't delete the folder");
-
-        return res.status(200).json({
-            message: "Folder deleted successfully.",
-        });
-
+        await hardDeleteCascade(req.folder._id);
+        return res.status(200).json({ message: "Folder permanently deleted." });
     } catch (error) {
-        console.error("Error in hardDeleteFolder controller", error);
+        console.error("Error in hardDeleteFolder", error);
         return res.status(500).json({ message: "Failed to delete folder" });
     }
-}
+};
 
 const softDeleteFolder = makeCascadeUpdater(
     () => ({ status: "trash", deletedAt: new Date() }),
