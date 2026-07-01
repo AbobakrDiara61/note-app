@@ -16,7 +16,18 @@ const ensureStrings = (stringFields) => {
   };
 };
 
+// Strip Mongoose document metadata for cloning
+const toCleanObject = (note) => {
+    const obj = note.toObject();
+    delete obj._id;
+    delete obj.createdAt;
+    delete obj.updatedAt;
+    delete obj.__v;
+    return obj;
+};
+
 export { 
     pick,
+    toCleanObject,
     ensureStrings
 };

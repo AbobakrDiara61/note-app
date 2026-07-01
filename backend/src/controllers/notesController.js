@@ -1,6 +1,6 @@
 import Folder from '../models/Folder.js';
 import Note from '../models/Note.js';
-import { pick } from '../utils/sanitize.js';
+import { pick, toCleanObject } from '../utils/sanitize.js';
 
 export const getNotes = async (req, res) => {
     try {
@@ -43,22 +43,6 @@ export const createNote = async (req, res) => {
         res.status(500).json({ error: "Error With Creating The Note in Database" });
     }
 }
-
-/* export const updateNote = async (req, res) => {
-    try {
-        const { _id: owner } = req.user;
-        const noteAttributes = pick(req.body, [ 'title', 'description', 'contentType', 'tags', 'folder', 'preferences']);
-        const note = req.note;
-        Object.assign(note, noteAttributes);
-        await note.save();
-        
-        res.status(200).json(note);
-
-    } catch (error) {
-        console.error("error in updating note controller ", error);
-        res.status(500).json({ error: "Error With Updating The Note in Database" });
-    }
-} */
 
 export const deleteNote = async (req, res) => {
     /** @type {import('mongoose').Document} */
@@ -104,3 +88,35 @@ export const archiveNote    = makeNoteUpdater({ status: 'archive' }, "Note archi
 export const restoreNote    = makeNoteUpdater({ status: 'active', deletedAt: null },  "Note restored successfully");
 export const pinNote        = makeNoteUpdater({ pinned: true }, "Note pinned successfully");
 export const unpinNote      = makeNoteUpdater({ pinned: false }, "Note unpinned successfully");
+export const moveNote       = makeNoteUpdater(
+    (_, req) => ({ folder: req.body.folder }),
+    "Note moved to the specified folder",
+    "Failed to move note to folder"
+)
+
+const makeNoteCloner = (getOverrides, successMessage, errorMessaage) => async (req, res) => {
+    try {
+        const cleanedNote = toCleanObject(req.note);
+        getOverrides && Object.assign(cleanedNote, getOverrides);
+        const newNote = await Note.create({ ...cleanedNote, history: [] });
+
+        return res.status(201).json({ message: successMessage });
+    } catch (error) {
+        console.error(`Error cloning note`, error);
+        return res.status(500).json({ message: errorMessaage || "Failed to clone note" })
+    }
+}
+
+export const copyNote = makeNoteCloner(
+    (req) => ({ folder: req.body.folder }),
+    "Note copied to the specified folder successfully",
+    "Failed to copy note to folder",
+    "copyNote"
+);
+
+export const duplicateNote = makeNoteCloner(
+    null,
+    "Note duplicated successfully",
+    "Failed to duplicate note",
+    "duplicateNote"
+);
