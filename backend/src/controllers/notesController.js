@@ -120,3 +120,56 @@ export const duplicateNote = makeNoteCloner(
     "Failed to duplicate note",
     "duplicateNote"
 );
+
+export const search = async (req, res) => {
+    const PAGE_SIZE = 2;
+    const allowedQuery = ['status', 'contentType'];
+    const allowedSort  = ['createdAt', 'updatedAt', 'title'];
+
+    try {
+        const { _id } = req.user;
+        const { q, limit, page, sortBy = 'updatedAt', sortOrder = 'desc', ...queryParams } = req.query;
+
+        const filter = allowedQuery.reduce((acc, key) => {
+            return  queryParams[key] ? {...acc, [key]: queryParams[key].toString() } : acc;
+        }, { owner: _id, status: { $ne: 'trash' } });
+
+        if (queryParams.tags) {
+            const tagList = queryParams.tags?.toString().split(',').map(t => t.trim()).filter(Boolean)
+            if (tagList.length) filter.tags = { $in: tagList }
+        }
+
+        if(q) {
+            const safeQ = q.toString().trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // const regex = new RegExp(safeQ, 'i');
+            filter.$or = [
+                { title: { $regex: safeQ, $options: 'i' } },
+                { description: { $regex: safeQ, $options: 'i' } },
+                { tags: { $regex: safeQ, $options: 'i' } },
+            ]
+        }
+
+        const pageNum  = Math.max(parseInt(page, 10) || 1, 1);
+        const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+        const skip = (pageNum - 1) * limitNum;
+
+        const sort = { [allowedSort.some(s => s === sortBy) ? sortBy : 'createdAt']: sortOrder === 'asc' ? 1 : -1 };
+
+        const [notes, total] = await Promise.all([
+            Note.find(filter)
+                .select('-history')
+                .populate('folder', 'name')
+                .populate('editedBy', 'name email')
+                .skip(skip)
+                .limit(limitNum)
+                .sort(sort)
+                .lean(),
+            Note.countDocuments(filter),
+        ]);
+
+        res.json({ message: "Notes fetched successfully", notes });
+    } catch (error) {
+        console.error("Error in getAllnotes Controller", error);
+        res.status(500).json({ error: "Error With Fetching Notes" });
+    }
+}
