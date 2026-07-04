@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Folder from "../models/Folder.js";
 import Note from "../models/Note.js";
 
@@ -79,7 +80,44 @@ const createFolder = async (req, res) => {
 const getAllFolders = async (req, res) => {
     try {
         const { _id } = req.user;
-        const folders = await Folder.find({ owner: _id });
+        const folders = await Folder.aggregate([
+            {
+                $match: {
+                    owner: new mongoose.Types.ObjectId(_id),
+                    parentFolder: null,
+                    status: 'active'
+                }
+            },
+            {
+                $graphLookup: {
+                    from: "folders",
+                    startWith: "$_id",
+                    connectFromField: "_id",
+                    connectToField: "parentFolder",
+                    as: "hierarchy",
+                    depthField: "level"
+                }
+            },
+            {
+                $addFields: {
+                    // Filter out deleted items from hierarchy
+                    hierarchy: {
+                        $filter: {
+                            input: "$hierarchy",
+                            cond: { $eq: ["$$this.status", "active"] }
+                        }
+                    },
+                    hasChildren: { $gt: [{ $size: "$hierarchy" }, 0] },
+                    childCount: { $size: "$hierarchy" }
+                }
+            },
+            {
+                $project: {
+                __v: 0,
+                "hierarchy.__v": 0,
+                }
+            }
+        ]); 
         if (!folders)
             return res.status(404).json({ message: "No folders found." })
 
