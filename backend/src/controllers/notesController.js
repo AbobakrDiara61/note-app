@@ -121,6 +121,62 @@ export const duplicateNote = makeNoteCloner(
     "duplicateNote"
 );
 
+const makeNoteRetrieval = (getFilter, options = {}, successMessage, errorMessaage) => async (req, res) => {
+    const PAGE_SIZE = 2;
+    const filter = typeof getFilter === 'function' ? getFilter(req) : getFilter;
+    filter.owner = req.user._id;
+    filter.status = filter.status || 'active';
+
+    const page  = Math.max(parseInt(req.query.page || options?.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || options?.limit, 10) || PAGE_SIZE, 1), 100);
+    const skip = (page - 1) * limit;
+    
+    const sort = options.sort || { createdAt: -1 };
+
+    console.log({
+        queryPage: req.query?.page,
+        queryLimit: req.query?.limit,
+        page,
+        limit,
+        skip
+    })
+    try {
+        const [notes, totalCount] = await Promise.all([
+            Note.find(filter)
+                                .populate('folder',   'name')
+                                .populate('editedBy', 'name')
+                                .skip(skip)
+                                .limit(limit)
+                                .sort(sort)
+                                .lean(),
+            Note.countDocuments(filter)
+        ])
+
+        res.status(200).json({ 
+            message: successMessage || "Notes fetched successfully", 
+            notes, 
+            pagination: {
+            page,
+            limit,
+            totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            }
+         });
+    } catch (error) {
+        console.error("Error in makeNoteRetrieval factory", error);
+        res.status(500).json({ error: errorMessaage || "Error With retrieving The Notes in Database" });
+    }
+
+}
+
+export const getUnfiledNotes  = makeNoteRetrieval(() => ({ folder: null }));
+export const getRecentNotes   = makeNoteRetrieval(() => ({}), { sort: { updatedAt: -1 } });
+
+export const getFolderNotes   = makeNoteRetrieval((req) => ({ folder: req.folder }), { sort: { updatedAt: -1 } });
+export const getTrashNotes    = makeNoteRetrieval(() => ({ status: 'trash' }));
+export const getArchivedNotes = makeNoteRetrieval(() => ({ status: 'archive' }));
+export const getPinnedNotes   = makeNoteRetrieval(() => ({ pinned: true }));
+
 export const search = async (req, res) => {
     const PAGE_SIZE = 2;
     const allowedQuery = ['status', 'contentType'];
